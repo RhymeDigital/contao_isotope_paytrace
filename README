@@ -1,0 +1,5 @@
+# Contao CMS/Isotope eCommerce Paytrace Payment Extension
+
+Used with Isotope eCommerce, this extension will set up Paytrace's v3 API as a payment method to accept credit
+ cards and more.
+
