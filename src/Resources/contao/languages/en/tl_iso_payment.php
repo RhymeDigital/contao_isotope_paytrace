@@ -17,6 +17,7 @@ $GLOBALS['TL_LANG']['tl_iso_payment']['paytrace_login'] 		    = array('Paytrace 
 $GLOBALS['TL_LANG']['tl_iso_payment']['paytrace_password'] 	        = array('Paytrace API password', 'Please enter your Paytrace API Password.');
 $GLOBALS['TL_LANG']['tl_iso_payment']['paytrace_integrator_id']     = array('Paytrace Integrator ID', 'This ID was assigned when you registered your developer account.');
 $GLOBALS['TL_LANG']['tl_iso_payment']['paytrace_trans_type'] 	    = array('Paytrace API Transaction Type', 'Please select the transaction type (Authorize Only or Authorize and Capture).');
+$GLOBALS['TL_LANG']['tl_iso_payment']['paytrace_cc_types'] 	        = array('Allowed Credit Card Types', 'Please select the credit cards allowed for this payment method.');
 
 /**
  * Reference

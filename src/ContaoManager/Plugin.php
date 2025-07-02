@@ -18,7 +18,7 @@ use Contao\ManagerPlugin\Bundle\Config\BundleConfig;
 use Contao\ManagerPlugin\Bundle\Parser\ParserInterface;
 use Rhyme\ContaoIsotopePaytraceBundle\RhymeContaoIsotopePaytraceBundle;
 
-final class Plugin implements BundlePluginInterface
+class Plugin implements BundlePluginInterface
 {
     public function getBundles(ParserInterface $parser): array
     {

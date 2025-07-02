@@ -16,7 +16,7 @@
     ],
     "require": {
         "php": "^7.4",
-        "contao/core-bundle": "^4.4",
+        "contao/core-bundle": "^4.13",
         "isotope/isotope-core": "^2.6"
     },
     "require-dev": {

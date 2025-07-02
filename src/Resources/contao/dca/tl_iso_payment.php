@@ -2,19 +2,18 @@
 
 declare(strict_types=1);
 
-/**
- * Rhyme Contao Isotope Paytrace Bundle
- *
- * Copyright (c) 2025 Rhyme.Digital
- *
- * @license GPLv3
- */
-
 namespace {
 
-    use Contao\Controller;
+    /**
+     * Rhyme Contao Isotope Paytrace Bundle
+     *
+     * Copyright (c) 2025 Rhyme.Digital
+     *
+     * @license GPLv3
+     */
 
-    Controller::loadLanguage('tl_iso_payment');
+    //use Contao\Controller;
+    //Controller::loadLanguage('tl_iso_payment');
 
     /**
      * Palettes
