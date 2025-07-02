@@ -1,0 +1,70 @@
+<script type="text/javascript" src="https://js<?= ($this->debug ? 'test' : '') ?>.authorize.net/v1/Accept.js" charset="utf-8"></script>
+<?php if($this->showForm): ?>
+<form id="<?= $this->formSubmit ?>" method="POST">
+    <input type="hidden" name="FORM_SUBMIT" value="<?= $this->formSubmit ?>">
+    <input type="hidden" name="REQUEST_TOKEN" value="{{request_token}}">
+    <?php endif; ?>
+    <input type="hidden" name="fullName" id="fullName" value="<?= $this->fullName ?>">
+    <input type="hidden" name="zip" id="zip" value="<?= $this->zip ?>">
+
+    <input type="hidden" name="dataDescriptor" id="dataDescriptor" value="">
+    <input type="hidden" name="dataValue" id="dataValue" value="">
+
+    <div class="messages">
+        <?php if($this->hasErrors): ?><p class="error"><?= $this->errorMsg; ?></p><?php endif; ?>
+    </div>
+
+    <div class="widget cardNumber">
+        <span class="label"><label for="cardNumber">Card Number</label></span>
+        <span class="input"><input type="text" name="cardNumber" id="cardNumber" placeholder=""/></span>
+    </div>
+    <div class="widget widgetGroup expMonthYear">
+        <span class="label"><label>Exp Month/Year</label></span>
+        <span class="input expMonth"><label class="invisible" for="expMonth">Exp Month</label><input type="text" name="expMonth" id="expMonth" placeholder="MM"/></span>
+        <span class="input expYear"><label class="invisible" for="expYear">Exp Year</label><input type="text" name="expYear" id="expYear" placeholder="YYYY"/>
+    </div>
+    <div class="widget cardCode">
+        <span class="label"><label for="cardCode">3 or 4 Digit Code</label></span>
+        <span class="input"><input type="text" name="cardCode" id="cardCode" placeholder="Card Code (CVV)"/></span>
+    </div>
+    <?php if($this->showForm): ?>
+    <div class="submit_container">
+        <button id="submitButton<?= $this->id ?>" name="nextStep" class="submit" type="submit" onclick="RhymeAcceptJsHandler.handleSubmit(
+            '<?= $this->authorize_public_key ?>',
+            '<?= $this->authorize_login ?>',
+            document.getElementById('<?= $this->formSubmit ?>')
+            ); return false;">Submit</button>
+    </div>
+</form>
+<?php else:
+    $GLOBALS['TL_BODY']['paytrace_'.$this->id] = "
+    <script>
+        function documentReady(fn) {
+            if (document.readyState != 'loading') {
+                fn();
+            } else if (document.addEventListener) {
+                document.addEventListener('DOMContentLoaded', fn);
+            } else {
+                document.attachEvent('onreadystatechange', function() {
+                    if (document.readyState != 'loading')
+                        fn();
+                });
+            }
+        }
+
+        window.documentReady(function() {
+            let parentForm = document.getElementById('". $this->formSubmit . "');
+            parentForm.addEventListener('click', function (event) {
+                if (!event.target.matches('input.submit.confirm[type=submit]')) return;
+                event.preventDefault();
+                RhymeAcceptJsHandler.handleSubmit(
+                    '" .$this->authorize_public_key. "',
+                    '". $this->authorize_login . "',
+                    document.getElementById('". $this->formSubmit . "')
+                ); 
+                return false;
+            });
+        });
+    </script>";
+    ?>
+<?php endif; ?>

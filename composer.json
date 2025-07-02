@@ -1,0 +1,34 @@
+{
+    "name": "rhymedigital/contao_isotope_paytrace",
+    "description": "A Paytrace payment extension for Isotope eCommerce, part of Contao CMS",
+    "minimum-stability": "stable",
+    "type": "contao-bundle",
+    "license": "LGPL-2.1-or-later",
+    "keywords": [
+        "contao",
+        "isotope"
+    ],
+    "authors": [
+        {
+            "name": "Rhyme Digital",
+            "homepage": "https://github.com/rhymedigital/"
+        }
+    ],
+    "require": {
+        "php": "^7.4",
+        "contao/core-bundle": "^4.4",
+        "isotope/isotope-core": "^2.6"
+    },
+    "require-dev": {
+        "contao/manager-plugin": "^2.7"
+    },
+    "autoload": {
+        "psr-4": {
+            "Rhyme\\ContaoIsotopePaytraceBundle\\": "src"
+        }
+    },
+    "extra": {
+        "contao-manager-plugin": "Rhyme\\ContaoIsotopePaytraceBundle\\ContaoManager\\Plugin"
+    },
+    "version": "1.0.0"
+}
