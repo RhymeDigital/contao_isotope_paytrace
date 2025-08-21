@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 /**
  * Rhyme Contao Isotope Paytrace Bundle
  *
@@ -10,7 +8,16 @@ declare(strict_types=1);
  * @license GPLv3
  */
 
-/**
- * Payment methods
- */
-\Isotope\Model\Payment::registerModelType('rhyme_paytrace', 'Rhyme\ContaoIsotopePaytraceBundle\Model\Payment\Paytrace');
+declare(strict_types=1);
+
+namespace {
+
+    use Isotope\Model\Payment;
+    use Rhyme\ContaoIsotopePaytraceBundle\Model;
+
+    /**
+     * Payment methods
+     */
+    Payment::registerModelType('rhyme_paytrace', Model\Payment\Paytrace::class);
+
+}
