@@ -20,7 +20,7 @@ namespace {
     /**
      * Fields
      */
-    $lang['paytrace_login']         = ['Paytrace API login ID', 'Please enter your Paytrace API Login ID.'];
+    $lang['paytrace_username']      = ['Paytrace API login ID', 'Please enter your Paytrace API Login ID.'];
     $lang['paytrace_password']      = ['Paytrace API password', 'Please enter your Paytrace API Password.'];
     $lang['paytrace_integrator_id'] = ['Paytrace Integrator ID', 'This ID was assigned when you registered your developer account.'];
     $lang['paytrace_trans_type']    = ['Paytrace API Transaction Type', 'Please select the transaction type (Authorize Only or Authorize and Capture).'];

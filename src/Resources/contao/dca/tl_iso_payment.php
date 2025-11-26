@@ -21,7 +21,7 @@ namespace {
     /**
      * Palettes
      */
-    $dca['palettes']['rhyme_paytrace'] = '{type_legend},name,label,type;{note_legend:hide},note;{config_legend},new_order_status,paytrace_cc_types,requireCCV,minimum_total,maximum_total,countries,shipping_modules,product_types,product_types_condition,config_ids;{gateway_legend},paytrace_login,paytrace_password,paytrace_integrator_id,paytrace_trans_type;{price_legend:hide},price,tax_class;{expert_legend:hide},guests,protected;{enabled_legend},debug,enabled';
+    $dca['palettes']['rhyme_paytrace'] = '{type_legend},name,label,type;{note_legend:hide},note;{config_legend},new_order_status,paytrace_cc_types,requireCCV,minimum_total,maximum_total,countries,shipping_modules,product_types,product_types_condition,config_ids;{gateway_legend},paytrace_username,paytrace_password,paytrace_integrator_id,paytrace_trans_type;{price_legend:hide},price,tax_class;{expert_legend:hide},guests,protected;{enabled_legend},debug,enabled';
 
     /**
      * Fields
@@ -48,7 +48,7 @@ namespace {
     (
         'exclude' => true,
         'inputType' => 'text',
-        'eval' => array('mandatory' => true, 'maxlength' => 255),
+        'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 255),
         'sql' => "varchar(255) NOT NULL default ''"
     );
 
