@@ -1,35 +1,48 @@
 <?php if($this->showForm): ?>
-<form id="<?= $this->formSubmit ?>" method="POST">
+    <form id="<?= $this->formSubmit ?>" method="POST">
     <input type="hidden" name="FORM_SUBMIT" value="<?= $this->formSubmit ?>">
     <input type="hidden" name="REQUEST_TOKEN" value="{{request_token}}">
-    <?php endif; ?>
-    <input type="hidden" name="fullName" id="fullName" value="<?= $this->fullName ?>" class="pt-encrypt">
-    <input type="hidden" name="zip" id="zip" value="<?= $this->zip ?>" class="pt-encrypt">
+<?php endif; ?>
 
-    <input type="hidden" name="dataDescriptor" id="dataDescriptor" value="">
-    <input type="hidden" name="dataValue" id="dataValue" value="">
+    <div class="paytracePaymentForm">
 
-    <div class="messages">
-        <?php if($this->hasErrors): ?><p class="error"><?= $this->errorMsg; ?></p><?php endif; ?>
+        <div class="messages">
+            <?php if($this->hasErrors): ?><p class="error"><?= $this->errorMsg; ?></p><?php endif; ?>
+        </div>
+
+        <div class="inner">
+
+            <div class="widget cardNumber">
+                <span class="label"><label for="cardNumber">Card Number</label></span>
+                <span class="input">
+                    <input type="text" name="cardNumber" id="cardNumber" class="text pt-encrypt" pattern="[0-9]+" placeholder="" value="" required />
+                </span>
+            </div>
+            <div class="widget expMonthWidget">
+                <span class="input expMonth">
+                    <label class="" for="expMonth">Exp Month</label>
+                    <input type="text" name="expMonth" id="expMonth" placeholder="MM" class="text" pattern="[0-9]+" value="" maxlength="2" required />
+                </span>
+            </div>
+            <div class="widget expYearWidget">
+                <span class="input expYear">
+                    <label class="" for="expYear">Exp Year</label>
+                    <input type="text" name="expYear" id="expYear" placeholder="YY" class="text" pattern="[0-9]+" value="" maxlength="2" required />
+                </span>
+            </div>
+            <div class="widget cardCodeWidget">
+                <span class="label"><label for="cardCode">3 or 4 Digit Code</label></span>
+                <span class="input"><input type="text" name="cardCode" id="cardCode" placeholder="CVV" pattern="[0-9]+" class="text pt-encrypt" maxlength="4" required /></span>
+            </div>
+
+        </div>
+        <?php if($this->showForm): ?>
+            <div class="submit_container">
+                <button id="submitButton<?= $this->id ?>" name="nextStep" class="submit" type="submit">Submit</button>
+            </div>
+        <?php endif; ?>
     </div>
 
-    <div class="widget cardNumber">
-        <span class="label"><label for="cardNumber">Card Number</label></span>
-        <span class="input"><input type="text" name="cardNumber" id="cardNumber" class="text pt-encrypt" placeholder="" value="4012000098765439" /></span>
-    </div>
-    <div class="widget widgetGroup expMonthYear">
-        <span class="label"><label>Exp Month/Year</label></span>
-        <span class="input expMonth"><label class="invisible" for="expMonth">Exp Month</label><input type="text" name="expMonth" id="expMonth" placeholder="MM" class="text" value="06" /></span>
-        <span class="input expYear"><label class="invisible" for="expYear">Exp Year</label><input type="text" name="expYear" id="expYear" placeholder="YYYY" class="text" value="2026" />
-    </div>
-    <div class="widget cardCode">
-        <span class="label"><label for="cardCode">3 or 4 Digit Code</label></span>
-        <span class="input"><input type="text" name="cardCode" id="cardCode" placeholder="Card Code (CVV)" class="text pt-encrypt" value="999" /></span>
-    </div>
-    <?php if($this->showForm): ?>
-    <div class="submit_container">
-        <button id="submitButton<?= $this->id ?>" name="nextStep" class="submit" type="submit">Submit</button>
-    </div>
-</form>
-
+<?php if($this->showForm): ?>
+    </form>
 <?php endif; ?>
