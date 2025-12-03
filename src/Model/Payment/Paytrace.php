@@ -85,7 +85,7 @@ HTML;
         $paymentData = StringUtil::deserialize($objOrder->payment_data, true);
         if(isset($paymentData['PAYTRACE_E2EE']) && \is_array($paymentData['PAYTRACE_E2EE'])) {
             foreach ($paymentData['PAYTRACE_E2EE'] as $attempt => $authData) {
-                if ($authData && $authData['status'] === 'success') {
+                if (!empty($authData) && ($authData['data']['response_code'] ?? null) === 101) {
                     return false;
                 }
             }
