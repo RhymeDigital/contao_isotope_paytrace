@@ -32,8 +32,6 @@ class Keyed extends BaseEndpoint
     {
         return $client->post(static::getEndpoint(), [
             'headers' => [
-                'X-Integrator-Id' => '9987RhymeDig',
-                'X-Permalinks'    => true,
                 'Content-Type'    => 'application/json',
                 'Cache-Control'   => 'no-cache',
                 'Authorization' => 'Bearer '.$authToken

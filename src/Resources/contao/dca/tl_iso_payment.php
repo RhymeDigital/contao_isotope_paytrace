@@ -21,7 +21,7 @@ namespace {
     /**
      * Palettes
      */
-    $dca['palettes']['rhyme_paytrace'] = '{type_legend},name,label,type;{note_legend:hide},note;{config_legend},new_order_status,paytrace_cc_types,requireCCV,minimum_total,maximum_total,countries,shipping_modules,product_types,product_types_condition,config_ids;{gateway_legend},paytrace_username,paytrace_password,paytrace_integrator_id,paytrace_trans_type;{price_legend:hide},price,tax_class;{expert_legend:hide},guests,protected;{enabled_legend},debug,enabled';
+    $dca['palettes']['rhyme_paytrace'] = '{type_legend},name,label,type;{note_legend:hide},note;{config_legend},new_order_status,requireCCV,minimum_total,maximum_total,countries,shipping_modules,product_types,product_types_condition,config_ids;{gateway_legend},paytrace_username,paytrace_password,paytrace_integrator_id,paytrace_merchant_id,paytrace_cc_types;{price_legend:hide},price,tax_class;{expert_legend:hide},guests,protected;{enabled_legend},debug,enabled';
 
     /**
      * Fields
@@ -32,7 +32,7 @@ namespace {
         'inputType' => 'select',
         'options' => array('mc', 'visa', 'amex', 'discover', 'diners'),
         'reference' => &$GLOBALS['TL_LANG']['tl_iso_payment']['paytrace_brands'],
-        'eval' => array('mandatory' => true, 'multiple' => true, 'tl_class' => 'w50 clr w50h', 'chosen' => true),
+        'eval' => array('mandatory' => true, 'multiple' => true, 'tl_class' => 'w50 w50h', 'chosen' => true),
         'sql' => "text NULL"
     );
 
@@ -40,7 +40,7 @@ namespace {
     (
         'exclude' => true,
         'inputType' => 'text',
-        'eval' => array('mandatory' => true, 'maxlength' => 255),
+        'eval' => array('mandatory' => true, 'maxlength' => 255, 'tl_class'=>'w50'),
         'sql' => "varchar(255) NOT NULL default ''"
     );
 
@@ -48,7 +48,7 @@ namespace {
     (
         'exclude' => true,
         'inputType' => 'text',
-        'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 255),
+        'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 255, 'tl_class'=>'w50'),
         'sql' => "varchar(255) NOT NULL default ''"
     );
 
@@ -56,8 +56,16 @@ namespace {
     (
         'exclude' => true,
         'inputType' => 'text',
-        'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 255),
+        'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 255, 'tl_class'=>'w50'),
         'sql' => "varchar(255) NOT NULL default ''"
+    );
+
+    $dca['fields']['paytrace_merchant_id'] = array
+    (
+        'exclude' => true,
+        'inputType' => 'text',
+        'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 5, 'tl_class'=>'w50'),
+        'sql' => "varchar(5) NOT NULL default ''"
     );
 
     $dca['fields']['paytrace_trans_type'] = array
@@ -66,7 +74,7 @@ namespace {
         'inputType' => 'select',
         'options' => array('AUTH_ONLY', 'AUTH_CAPTURE'),
         'reference' => &$GLOBALS['TL_LANG']['tl_iso_payment'],
-        'eval' => array('mandatory' => true),
+        'eval' => array('mandatory' => true, 'tl_class'=>'w50'),
         'sql' => "varchar(32) NOT NULL default ''"
     );
 

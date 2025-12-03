@@ -41,18 +41,18 @@ class Paytrace extends Payment {
             return false;
         }
 
+        $formId = $objModule->getFormId().'_'.Checkout::STEP_PROCESS;
+
         // Check for whether we are on the process step or not
         if ($isOnProcessStep = (HasteInput::getAutoItem('step') === Checkout::STEP_PROCESS))
         {
-
-            $this->authPayment($objOrder, $objModule);
             // Add in the E2ee library js
             $GLOBALS['TL_HEAD'][] = '<script src="https://api'.($this->debug ? '.sandbox' : '').'.paytrace.com/v3/assets/js/e2ee/paytrace-e2ee.js"></script>';
 
             // Add handler JS
             $GLOBALS['TL_JAVASCRIPT'][] = 'bundles/rhymecontaoisotopepaytrace/js/paytrace_e2ee_handler.js';
 
-            $formId = $objModule->getFormId().'_'.Checkout::STEP_PROCESS;
+            $sandbox = $this->debug ? 'true' : 'false';
 
             // Set up the handler
             $GLOBALS['TL_BODY']['paytrace_'.$this->id] = <<<HTML
@@ -73,7 +73,7 @@ class Paytrace extends Payment {
     window.documentReady(function() {
         const form = document.getElementById('{$formId}');
         if (form) {
-            Rhyme.PaytraceE2EEHandler.create(form, {}); // Todo: add options
+            Rhyme.PaytraceE2EEHandler.create(form, {sandbox: {$sandbox}});
         }
     });
 </script>
@@ -85,7 +85,7 @@ HTML;
         $paymentData = StringUtil::deserialize($objOrder->payment_data, true);
         if(isset($paymentData['PAYTRACE_E2EE']) && \is_array($paymentData['PAYTRACE_E2EE'])) {
             foreach ($paymentData['PAYTRACE_E2EE'] as $attempt => $authData) {
-                if ($authData && $authData['responseCode'] === '') {
+                if ($authData && $authData['status'] === 'success') {
                     return false;
                 }
             }
@@ -102,39 +102,36 @@ HTML;
 
         $strErrors = '';
 
-        if (Input::post('FORM_SUBMIT') === $objModule->getFormId().'_'.Checkout::STEP_PROCESS) {
+        if (Input::post('FORM_SUBMIT') === $formId) {
 
             //Check the data and authorize the payment
             $response = $this->authPayment($objOrder, $objModule);
 
-            if (($response['hasError'] ?? null) === true || \trim($response['transId'] ?? '') === '') {
+            if (($response['hasError'] ?? null) === true
+                || ($response['response']['data']['response_code'] ?? null) !== 101
+                || \trim($response['response']['data']['transaction_uuid'] ?? '') === ''
+                || \trim($response['response']['data']['transaction_id'] ?? '') === ''
+            ) {
                 $strErrors = $response['errorMessage'];
                 System::log('Paytrace E2ee: Errors when attempting transaction:  [' . $response['errorCode'] . '] "'.$strErrors.'"', __METHOD__, TL_ERROR);
             }
             else {
+                $objOrder->setDatePaid(\time());
+                $objOrder->save();
+
                 // Pack it up, people. We're done here
-                System::log('Paytrace E2ee: Successfully created transaction with Transaction ID:  "' . $response['transId'] . '"', __METHOD__, TL_GENERAL);
+                System::log('Paytrace E2ee: Successfully created transaction with Transaction ID:  "' . $response['response']['data']['transaction_id']  . '"', __METHOD__, TL_GENERAL);
                 return false;
             }
         }
 
         global $objPage;
-//        $objAddress = $objOrder->getBillingAddress();
-//
-//        //Set necessary data for E2ee tokenization
-//        $arrData                            = array();
-//        $arrData['authorize_login']         = $this->authorize_login;
-//        $arrData['authorize_public_key']    = $this->authorize_public_key;
-//        $arrData['fullName']                = substr($objAddress->firstname . ' ' . $objAddress->lastname, 0, 40);
-//        $arrData['zip']                     = substr($objAddress->postal, 0, 12);
 
         $objTemplate = new Template(($this->customTpl ?? null) ? $this->customTpl : 'iso_payment_paytrace');
-
-//        $objTemplate->setData($arrData);
         $objTemplate->id            = $this->id;
         $objTemplate->pageId        = $objPage->id;
         $objTemplate->debug         = $this->debug;
-        $objTemplate->formSubmit    = $objModule->getFormId().'_'.Checkout::STEP_PROCESS;
+        $objTemplate->formSubmit    = $formId;
         $objTemplate->showForm      = $isOnProcessStep;
         $objTemplate->hasErrors     = !empty($strErrors);
         $objTemplate->errorMsg      = $strErrors;
@@ -178,7 +175,11 @@ HTML;
      */
     protected function authPayment(IsotopeProductCollection $objOrder, Module $objModule): array
     {
-        $return = [];
+        // Do not charge multiple times
+        if ($GLOBALS['PAYTRACE_AUTH_ATTEMPTED'] ?? null) {
+            return [];
+        }
+        $GLOBALS['PAYTRACE_AUTH_ATTEMPTED'] = true;
 
         // Create a client
         $client = PaytraceClient::create(
@@ -202,6 +203,7 @@ HTML;
             $tokenData = \json_decode((string)$tokenResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
 
             if (($tokenData['status'] ?? null) !== 'success') {
+                System::log('Paytrace E2ee: Could not retrieve access token.', __METHOD__, TL_ERROR);
                 return [
                     'hasError' => true,
                     'errorMessage' => 'Could not retrieve access token.'
@@ -224,95 +226,83 @@ HTML;
 
             $response = $keyedSale->sendRequest(
                 $client,
-//                [
-//                    'amount' => $objOrder->getTotal(),
-//                    'billing_address' => [
-//                        'street' => $billingAddress['street_1'] ?? '',
-//                        'street2' => $billingAddress['street_2'] ?? '',
-//                        'city' => $billingAddress['city'] ?? '',
-//                        'state' => $billingState,
-//                        'country' => \strtoupper($billingAddress['country'] ?? ''),
-//                        'postal_code' => $billingAddress['postal'] ?? '',
-//                    ],
-//                    //'billing_name' => 'string',
-//                    'card' => [
-//                        'number' => (string)Input::post('cardNumber'),
-//                        'expiration_month' => (string)Input::post('expMonth'),
-//                        'expiration_year' => (string)Input::post('expYear'),
-//                    ],
-//                    'csc' => (string)Input::post('cardCode'),
-//                    'billing_email' => (string)($billingAddress['email'] ?: FrontendUser::getInstance()->email),
-//                    'billing_phone' => (string)($billingAddress['phone'] ?: FrontendUser::getInstance()->phone),
-//                    'customer_reference_id' => 'Cart ID: ' . $objOrder->source_collection_id,
-//                    //'description' => 'business services',
-//                    //'force_partial_auth_capability' => true,
-//                    //'invoice_number' => '17',
-//                    'merchant_id' => 888000002887,
-//                    //'custom_dba' => 'Doing Business As Test Company',
-//                    //'return_clr' => false,
-//                    //'customer_id' => 0,
-//                    'shipping_address' => [
-//                        'street' => $shippingAddress['street_1'] ?? '',
-//                        'street2' => $shippingAddress['street_2'] ?? '',
-//                        'city' => $shippingAddress['city'] ?? '',
-//                        'state' => $shippingState,
-//                        'country' => $shippingAddress['country'] ?? '',
-//                        'postal_code' => $shippingAddress['postal'] ?? '',
-//                    ],
-//                    'shipping_name' => \trim((string)($billingAddress['firstname'] ?: FrontendUser::getInstance()->firstname) . ' ' . (string)($billingAddress['lastname'] ?: FrontendUser::getInstance()->lastname)),
-//                    //'tax_amount' => '2.16',
-//                ],
                 [
                     'amount' => $objOrder->getTotal(),
+                    'billing_name' => \trim((string)($billingAddress['firstname'] ?: FrontendUser::getInstance()->firstname) . ' ' . (string)($billingAddress['lastname'] ?: FrontendUser::getInstance()->lastname)),
                     'billing_address' => [
-                        'street' => '123 Test St.',
-                        'street2' => '',
-                        'city' => 'Easthampton',
-                        'state' => 'MA',
-                        'country' => 'US',
-                        'postal_code' => '01027',
+                        'street' => $billingAddress['street_1'] ?? '',
+                        'street2' => $billingAddress['street_2'] ?? '',
+                        'city' => $billingAddress['city'] ?? '',
+                        'state' => $billingState,
+                        'country' => \strtoupper($billingAddress['country'] ?? ''),
+                        'postal_code' => $billingAddress['postal'] ?? '',
                     ],
                     'card' => [
-                        'number' => (string)Input::post('cardNumber'),
-                        'expiration_month' => '06',
-                        'expiration_year' => '2026',
+                        'number' => \html_entity_decode((string)Input::post('cardNumber'), ENT_QUOTES, 'UTF-8'),
+                        'expiration_month' => (string)Input::post('expMonth'),
+                        'expiration_year' => (string)Input::post('expYear'),
                     ],
-                    'csc' => (string)Input::post('cardCode'),
-                    'billing_email' => 'adam@rhyme.digital',
-                    'billing_phone' => '4133030353',
-                    'customer_reference_id' => 'Cart ID: 1234',
-                    'merchant_id' => 888000002887,
+                    'csc' => \html_entity_decode((string)Input::post('cardCode'), ENT_QUOTES, 'UTF-8'),
+                    'billing_email' => (string)($billingAddress['email'] ?: FrontendUser::getInstance()->email),
+                    'billing_phone' => (string)($billingAddress['phone'] ?: FrontendUser::getInstance()->phone),
+                    'customer_reference_id' => 'Cart ID: ' . $objOrder->source_collection_id,
+                    'merchant_id' => $this->paytrace_merchant_id,
                     'shipping_address' => [
-                        'street' => '123 Test St.',
-                        'street2' => '',
-                        'city' => 'Easthampton',
-                        'state' => 'MA',
-                        'country' => 'US',
-                        'postal_code' => '01027',
+                        'street' => $shippingAddress['street_1'] ?? '',
+                        'street2' => $shippingAddress['street_2'] ?? '',
+                        'city' => $shippingAddress['city'] ?? '',
+                        'state' => $shippingState,
+                        'country' => $shippingAddress['country'] ?? '',
+                        'postal_code' => $shippingAddress['postal'] ?? '',
                     ],
-                    'shipping_name' => 'Adam Fisher',
+                    'shipping_name' => \trim((string)($shippingAddress['firstname'] ?: FrontendUser::getInstance()->firstname) . ' ' . (string)($shippingAddress['lastname'] ?: FrontendUser::getInstance()->lastname)),
                 ],
                 $tokenData['data']['access_token']
             );
 
-            \dd((string)$response->getBody());
+            if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
+                System::log('Paytrace E2ee: Errors when attempting transaction: No response from the API.', __METHOD__, TL_ERROR);
+                return [
+                    'hasError' => true,
+                    'errorMessage' => 'Payment could not be processed. Please try again or contact an administrator.'
+                ];
+            }
+
+            // Store response data in order for future references
+            $arrPayment = StringUtil::deserialize($objOrder->payment_data, true);
+            $arrPayment['PAYTRACE_E2EE'] = $arrPayment['PAYTRACE_E2EE'] ?? [];
+            $arrPayment['PAYTRACE_E2EE'][] = $response;
+
+            $objOrder->payment_data = $arrPayment;
+            $objOrder->save();
+
+            if (($response['data']['response_code'] ?? null) !== 101) {
+                System::log('Paytrace E2ee: Errors when attempting transaction: [' . ($response['data']['response_code'] ?? '') . '] "'.($response['data']['response_message'] ?? '').'"', __METHOD__, TL_ERROR);
+                return [
+                    'hasError' => true,
+                    'errorMessage' => 'Payment could not be processed. Message from processor: '.($response['data']['response_message'] ?? '')
+                ];
+            }
+
+            return [
+                'hasError' => false,
+                'response' => $response
+            ];
         }
         catch (ClientException $e) {
             System::log('Paytrace E2ee: Errors when attempting transaction: '.$e->getResponse()->getBody()->getContents(), __METHOD__, TL_ERROR);
             return [
                 'hasError' => true,
-                'errorMessage' => 'Paytrace E2ee: Errors when attempting transaction: '.$e->getResponse()->getBody()->getContents()
+                'errorMessage' => 'Payment could not be processed. Please try again or contact an administrator.'
             ];
         }
         catch (\Exception $e) {
             System::log('Paytrace E2ee: Errors when attempting transaction: [' . $e->getCode() . '] "'.$e->getMessage().'"', __METHOD__, TL_ERROR);
             return [
                 'hasError' => true,
-                'errorMessage' => 'Paytrace E2ee: Errors when attempting transaction: [' . $e->getCode() . '] "'.$e->getMessage().'"'
+                'errorMessage' => 'Payment could not be processed. Please try again or contact an administrator.'
             ];
         }
-
-        return $return;
     }
 
 
