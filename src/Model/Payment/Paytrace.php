@@ -227,7 +227,7 @@ HTML;
             $response = $keyedSale->sendRequest(
                 $client,
                 [
-                    'amount' => $objOrder->getTotal(),
+                    'amount' => \round($objOrder->getTotal(), 2),
                     'billing_name' => \trim((string)($billingAddress['firstname'] ?: FrontendUser::getInstance()->firstname) . ' ' . (string)($billingAddress['lastname'] ?: FrontendUser::getInstance()->lastname)),
                     'billing_address' => [
                         'street' => $billingAddress['street_1'] ?? '',
