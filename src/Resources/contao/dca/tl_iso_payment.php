@@ -35,7 +35,6 @@ namespace {
         'eval' => array('mandatory' => true, 'multiple' => true, 'tl_class' => 'w50 w50h', 'chosen' => true),
         'sql' => "text NULL"
     );
-
     $dca['fields']['paytrace_username'] = array
     (
         'exclude' => true,
@@ -43,7 +42,6 @@ namespace {
         'eval' => array('mandatory' => true, 'maxlength' => 255, 'tl_class'=>'w50'),
         'sql' => "varchar(255) NOT NULL default ''"
     );
-
     $dca['fields']['paytrace_password'] = array
     (
         'exclude' => true,
@@ -51,7 +49,6 @@ namespace {
         'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 255, 'tl_class'=>'w50'),
         'sql' => "varchar(255) NOT NULL default ''"
     );
-
     $dca['fields']['paytrace_integrator_id'] = array
     (
         'exclude' => true,
@@ -59,7 +56,6 @@ namespace {
         'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 255, 'tl_class'=>'w50'),
         'sql' => "varchar(255) NOT NULL default ''"
     );
-
     $dca['fields']['paytrace_merchant_id'] = array
     (
         'exclude' => true,
@@ -67,7 +63,6 @@ namespace {
         'eval' => array('mandatory' => true, 'hideInput' => true, 'maxlength' => 5, 'tl_class'=>'w50'),
         'sql' => "varchar(5) NOT NULL default ''"
     );
-
     $dca['fields']['paytrace_trans_type'] = array
     (
         'exclude' => true,
@@ -77,7 +72,6 @@ namespace {
         'eval' => array('mandatory' => true, 'tl_class'=>'w50'),
         'sql' => "varchar(32) NOT NULL default ''"
     );
-
     $dca['fields']['customTpl'] = $dca['fields']['customTpl'] ?? array
     (
         'exclude'               => true,

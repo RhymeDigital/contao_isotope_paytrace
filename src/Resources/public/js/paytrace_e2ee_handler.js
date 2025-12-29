@@ -70,9 +70,14 @@ window.Rhyme = window.Rhyme || {};
             let self = this;
 
             if (!window.paytrace) {
-                alert('Paytrace E2EE is not loaded');
+                console.error('Paytrace E2EE is not loaded');
                 return;
             }
+
+            // Remove submit buttons
+            self.#form.querySelectorAll('input[type=submit],button').forEach(el => {
+                el.remove();
+            });
 
             window.paytrace.submitEncrypted(self.#form);
         }

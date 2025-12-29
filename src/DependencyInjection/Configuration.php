@@ -16,7 +16,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 class Configuration implements ConfigurationInterface
 {
-    const ROOT_KEY = 'rhymedigital_isotope_paytrace';
+    const ROOT_KEY = 'rhyme_contao_isotope_paytrace';
 
     public function getConfigTreeBuilder(): TreeBuilder
     {

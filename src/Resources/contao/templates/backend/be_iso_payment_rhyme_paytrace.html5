@@ -1,0 +1,131 @@
+<?php
+use Contao\Message;
+use Contao\StringUtil;
+
+$transData = $this->transactionData;
+
+echo Message::generate();
+?>
+
+<div id="tl_buttons">
+    <a href="<?= StringUtil::ampersand(\str_replace(['&key=payment', '&id='.$this->collectionId], '', Environment::get('request'))) ?>" class="header_back" title="<?= StringUtil::specialchars($GLOBALS['TL_LANG']['MSC']['backBT']) ?>"><?= $GLOBALS['TL_LANG']['MSC']['backBT'] ?></a>
+</div>
+
+<?php if ($this->order === null): ?>
+    <p class="tl_gerror"><?= $GLOBALS['TL_LANG']['MSC']['backendPaymentNotFound'] ?></p>
+<?php else: ?>
+    <form id="tl_iso_paytrace_payment" class="tl_form tl_edit_form" method="post" enctype="application/x-www-form-urlencoded">
+        <div class="tl_formbody_edit">
+            <input type="hidden" name="FORM_SUBMIT" value="<?= $this->formSubmit ?>">
+            <input type="hidden" name="REQUEST_TOKEN" value="<?= $this->requestToken ?>">
+    
+            <table class="tl_show">
+            <tbody>
+            <?php if ($transData['requested_amount'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_requested_amount'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['requested_amount'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['settle_amount'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_settle_amount'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['settle_amount'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['card_brand'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_card_brand'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['card_brand'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['created_at'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_created_at'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['created_at'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['billing_name'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_billing_name'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['billing_name'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['billing_email'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_billing_email'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['billing_email'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['billing_phone'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_billing_phone'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['billing_phone'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['status'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_status'] ?>: </span></td>
+                    <td class="tl_bg"><?= $GLOBALS['TL_LANG']['MSC']['PAYTRACE_TRANSACTION_STATUS'][$transData['status']] ?? $transData['status'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['card_masked'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_card_masked'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['card_masked'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['customer_reference'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_customer_reference'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['customer_reference'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['transaction_id'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_id'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['transaction_id'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['transaction_uuid'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_uuid'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['transaction_uuid'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['processor'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_processor'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['processor'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['approval_code'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_approval_code'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['approval_code'] ?></td>
+                </tr>
+            <?php endif; ?>
+            <?php if ($transData['action'] ?? null): ?>
+                <tr>
+                    <td class="tl_bg"><span class="tl_label"><?= $GLOBALS['TL_LANG']['MSC']['transaction_action'] ?>: </span></td>
+                    <td class="tl_bg"><?= $transData['action'] ?></td>
+                </tr>
+            <?php endif; ?>
+            </tbody>
+            </table>
+            
+        </div>
+        
+        <div class="tl_formbody_submit">
+            <div class="tl_submit_container">
+                
+                <?php if ($this->transactionId && \in_array($transData['status'] ?? null, ['A','P','N']) && !(float)$this->order->paytrace_void_requested): ?>
+                    <button type="submit" name="void" id="voidPaytrace" class="tl_submit" accesskey="v" onclick="if(!confirm('<?= ($GLOBALS['TL_LANG']['MSC']['transaction_void_confirm'] ?? null) ?>'))return false;">Void Payment</button>
+                <?php elseif ($this->transactionId && ($transData['status'] ?? null) === 'S' && !$this->order->paytrace_refund_amt_requested): ?>
+                    <button type="submit" name="refund" id="refundPaytrace" class="tl_submit" accesskey="r" onclick="if(!confirm('<?= ($GLOBALS['TL_LANG']['MSC']['transaction_refund_confirm'] ?? null) ?>'))return false;">Refund Payment</button>
+                <?php endif; ?>
+                
+            </div>
+        </div>
+    </form>
+<?php endif; ?>

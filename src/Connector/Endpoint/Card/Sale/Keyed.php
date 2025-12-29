@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 namespace Rhyme\ContaoIsotopePaytraceBundle\Connector\Endpoint\Card\Sale;
 
+use GuzzleHttp\Exception\GuzzleException;
 use Rhyme\ContaoIsotopePaytraceBundle\Connector\Client;
 use Rhyme\ContaoIsotopePaytraceBundle\Connector\Endpoint\BaseEndpoint;
 use Psr\Http\Message\ResponseInterface;
@@ -27,6 +28,7 @@ class Keyed extends BaseEndpoint
      * @param array  $data
      * @param string $authToken
      * @return ResponseInterface
+     * @throws GuzzleException
      */
     public function sendRequest(Client $client, array $data, string $authToken): ResponseInterface
     {
