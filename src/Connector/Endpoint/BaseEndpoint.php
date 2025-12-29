@@ -27,7 +27,4 @@ abstract class BaseEndpoint
     {
         return static::$endpoint;
     }
-
-
-
 }

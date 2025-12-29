@@ -1,0 +1,9 @@
+services:
+  _defaults:
+     autowire: true
+     autoconfigure: true
+     public: false
+
+  Rhyme\ContaoIsotopePaytraceBundle\Helper\:
+    resource: '../../Helper'
+    public: true

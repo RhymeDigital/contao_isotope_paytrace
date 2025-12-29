@@ -42,11 +42,6 @@ class RhymeIsotopePaytraceExtension extends Extension
             new FileLocator(__DIR__ . '/../Resources/config')
         );
 
-        $loader->load('parameters.yml');
         $loader->load('services.yml');
-        $loader->load('listener.yml');
-
-        //$rootKey = $this->getAlias();
-        //$container->setParameter($rootKey.'.foo.bar', $config['foo']['bar']);
     }
 }

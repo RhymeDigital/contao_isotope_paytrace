@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Rhyme\ContaoIsotopePaytraceBundle;
 
+use Rhyme\ContaoIsotopePaytraceBundle\DependencyInjection\RhymeIsotopePaytraceExtension;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
 
 /**
@@ -19,4 +20,8 @@ use Symfony\Component\HttpKernel\Bundle\Bundle;
  */
 final class RhymeContaoIsotopePaytraceBundle extends Bundle
 {
+    protected function getContainerExtensionClass(): string
+    {
+        return RhymeIsotopePaytraceExtension::class;
+    }
 }

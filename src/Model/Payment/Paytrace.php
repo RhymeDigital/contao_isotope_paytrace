@@ -12,32 +12,44 @@ declare(strict_types=1);
 
 namespace Rhyme\ContaoIsotopePaytraceBundle\Model\Payment;
 
+use Contao\BackendTemplate;
+use Contao\Controller;
+use Contao\CoreBundle\Exception\AjaxRedirectResponseException;
+use Contao\CoreBundle\Exception\RedirectResponseException;
 use Contao\FrontendUser;
+use Contao\Message;
+use Contao\Messages;
 use Contao\Module;
 use Contao\System;
 use Contao\Input;
 use Contao\StringUtil;
-use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\GuzzleException;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Interfaces\IsotopePurchasableCollection;
+use Isotope\Interfaces\IsotopeBackendInterface;
 use Isotope\Model\Payment;
+use Isotope\Model\ProductCollection\Order;
 use Isotope\Module\Checkout;
 use Isotope\Template;
 use Haste\Input\Input as HasteInput;
 use Rhyme\ContaoIsotopePaytraceBundle\Connector\Client as PaytraceClient;
+use Rhyme\ContaoIsotopePaytraceBundle\Connector\Endpoint\Card\Batch\Refund;
+use Rhyme\ContaoIsotopePaytraceBundle\Connector\Endpoint\Card\Batch\VoidTransaction;
 use Rhyme\ContaoIsotopePaytraceBundle\Connector\Endpoint\Card\Sale\Keyed;
+use Rhyme\ContaoIsotopePaytraceBundle\Connector\Endpoint\Card\Transaction;
 use Rhyme\ContaoIsotopePaytraceBundle\Connector\Endpoint\Token;
+use Rhyme\ContaoIsotopePaytraceBundle\Helper\TokenHelper;
 
-class Paytrace extends Payment {
-
+class Paytrace extends Payment implements IsotopeBackendInterface
+{
     /**
      * @inheritdoc
      */
     public function checkoutForm(IsotopeProductCollection $objOrder, Module $objModule)
     {
         if (!$objOrder instanceof IsotopePurchasableCollection) {
-            System::log('Product collection ID "' . $objOrder->getId() . '" is not purchasable', __METHOD__, TL_ERROR);
+            System::log($GLOBALS['TL_LANG']['ERR']['collection_not_purchasable'], __METHOD__, TL_ERROR);
             return false;
         }
 
@@ -57,7 +69,7 @@ class Paytrace extends Payment {
             // Set up the handler
             $GLOBALS['TL_BODY']['paytrace_'.$this->id] = <<<HTML
 <script>
-    function documentReady(fn) {
+    function documentReadyPaytrace{$this->id}(fn) {
         if (document.readyState !== 'loading') {
             fn();
         } else if (document.addEventListener) {
@@ -70,7 +82,7 @@ class Paytrace extends Payment {
         }
     }
 
-    window.documentReady(function() {
+    window.documentReadyPaytrace{$this->id}(function() {
         const form = document.getElementById('{$formId}');
         if (form) {
             Rhyme.PaytraceE2EEHandler.create(form, {sandbox: {$sandbox}});
@@ -113,14 +125,14 @@ HTML;
                 || \trim($response['response']['data']['transaction_id'] ?? '') === ''
             ) {
                 $strErrors = $response['errorMessage'];
-                System::log('Paytrace E2ee: Errors when attempting transaction:  [' . $response['errorCode'] . '] "'.$strErrors.'"', __METHOD__, TL_ERROR);
+                System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'], $response['errorCode'] . '] "'.$strErrors.'"'), __METHOD__, TL_ERROR);
             }
             else {
                 $objOrder->setDatePaid(\time());
                 $objOrder->save();
 
                 // Pack it up, people. We're done here
-                System::log('Paytrace E2ee: Successfully created transaction with Transaction ID:  "' . $response['response']['data']['transaction_id']  . '"', __METHOD__, TL_GENERAL);
+                System::log(\sprintf($GLOBALS['TL_LANG']['MSC']['transaction_sale_success'], ' Transaction ID: "' . $response['response']['data']['transaction_id']  . '"'), __METHOD__, TL_GENERAL);
                 return false;
             }
         }
@@ -151,22 +163,6 @@ HTML;
         return false;
     }
 
-    /**
-     * Return information or advanced features in the backend.
-     * //TODO - ADD METHOD TO CAPTURE PAYMENT FOR AUTH-ONLY TRANSACTIONS
-     * //TODO - ADD METHOD TO REFUND CAPTURED TRANSACTIONS
-     *
-     * @param int $orderId
-     *
-     * @return string
-     */
-    public function backendInterface($orderId)
-    {
-        $buffer = '';
-
-        return $buffer;
-    }
-
 
     /**
      * @param IsotopeProductCollection $objOrder
@@ -189,24 +185,12 @@ HTML;
             (bool)$this->debug
         );
 
-        $tokenEndpoint = new Token();
-
         try
         {
-            // Get a token (don't bother doing the refresh)
-            $tokenResponse = $tokenEndpoint->getToken(
-                $client,
-                $this->paytrace_username,
-                $this->paytrace_password
-            );
-
-            $tokenData = \json_decode((string)$tokenResponse->getBody(), true, 512, JSON_THROW_ON_ERROR);
-
-            if (($tokenData['status'] ?? null) !== 'success') {
-                System::log('Paytrace E2ee: Could not retrieve access token.', __METHOD__, TL_ERROR);
+            if (empty($accessToken = System::getContainer()->get(TokenHelper::class)->getAccessToken($client, $this->paytrace_username, $this->paytrace_password))) {
                 return [
                     'hasError' => true,
-                    'errorMessage' => 'Could not retrieve access token.'
+                    'errorMessage' => $GLOBALS['TL_LANG']['ERR']['access_token_retrieval']
                 ];
             }
 
@@ -224,6 +208,7 @@ HTML;
 
             $keyedSale = new Keyed();
 
+            // Todo: Use Connector\Model\* classes to build the request body to limit potential errors
             $response = $keyedSale->sendRequest(
                 $client,
                 [
@@ -257,14 +242,14 @@ HTML;
                     ],
                     'shipping_name' => \trim((string)($shippingAddress['firstname'] ?: FrontendUser::getInstance()->firstname) . ' ' . (string)($shippingAddress['lastname'] ?: FrontendUser::getInstance()->lastname)),
                 ],
-                $tokenData['data']['access_token']
+                $accessToken
             );
 
             if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
-                System::log('Paytrace E2ee: Errors when attempting transaction: No response from the API.', __METHOD__, TL_ERROR);
+                System::log($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response'], __METHOD__, TL_ERROR);
                 return [
                     'hasError' => true,
-                    'errorMessage' => 'Payment could not be processed. Please try again or contact an administrator.'
+                    'errorMessage' => $GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed2']
                 ];
             }
 
@@ -277,10 +262,10 @@ HTML;
             $objOrder->save();
 
             if (($response['data']['response_code'] ?? null) !== 101) {
-                System::log('Paytrace E2ee: Errors when attempting transaction: [' . ($response['data']['response_code'] ?? '') . '] "'.($response['data']['response_message'] ?? '').'"', __METHOD__, TL_ERROR);
+                System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'], '[' . ($response['data']['response_code'] ?? '') . '] "'.($response['data']['response_message'] ?? '').'"'), __METHOD__, TL_ERROR);
                 return [
                     'hasError' => true,
-                    'errorMessage' => 'Payment could not be processed. Message from processor: '.($response['data']['response_message'] ?? '')
+                    'errorMessage' => \sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed1'], ($response['data']['response_message'] ?? ''))
                 ];
             }
 
@@ -290,17 +275,17 @@ HTML;
             ];
         }
         catch (ClientException $e) {
-            System::log('Paytrace E2ee: Errors when attempting transaction: '.$e->getResponse()->getBody()->getContents(), __METHOD__, TL_ERROR);
+            System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'], (string)$e->getResponse()->getBody()->getContents()), __METHOD__, TL_ERROR);
             return [
                 'hasError' => true,
-                'errorMessage' => 'Payment could not be processed. Please try again or contact an administrator.'
+                'errorMessage' => $GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed2']
             ];
         }
         catch (\Exception $e) {
-            System::log('Paytrace E2ee: Errors when attempting transaction: [' . $e->getCode() . '] "'.$e->getMessage().'"', __METHOD__, TL_ERROR);
+            System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'], '[' . $e->getCode() . '] "'.$e->getMessage().'"'), __METHOD__, TL_ERROR);
             return [
                 'hasError' => true,
-                'errorMessage' => 'Payment could not be processed. Please try again or contact an administrator.'
+                'errorMessage' => $GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed2']
             ];
         }
     }
@@ -316,4 +301,275 @@ HTML;
         return 'Cart ID: ' . $objOrder->source_collection_id;
     }
 
+    /**
+     * @param int $collectionId
+     * @return bool
+     */
+    public function hasBackendInterface(int $collectionId): bool
+    {
+        return true;
+    }
+
+
+    /**
+     * Return information and/or advanced features in the backend.
+     * //TODO - ADD METHOD TO CAPTURE PAYMENT FOR AUTH-ONLY TRANSACTIONS
+     *
+     * @param int $collectionId
+     *
+     * @return string
+     */
+    public function renderBackendInterface(int $collectionId): string
+    {
+        $template = new BackendTemplate('be_iso_payment_rhyme_paytrace');
+        $template->setData($this->row());
+
+        $template->collectionId  = $collectionId;
+        $template->formSubmit    = 'form_submit_paytrace_'.$collectionId;
+        $template->order         = Order::findByPk($collectionId);
+        $template->paymentData   = $template->order !== null ? StringUtil::deserialize($template->order->payment_data, true) : [];
+        $template->requestToken  = System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue();
+        $template->transactionId = '';
+
+        // See if we have a successful transaction for capture, void, refund, etc. buttons
+        foreach ((array)($template->paymentData['PAYTRACE_E2EE'] ?? []) as $attempt) {
+            if (!empty($attempt['data']['response_code'])
+                && (int)$attempt['data']['response_code'] === 101
+                && !empty($attempt['data']['transaction_id'])
+            ) {
+                $template->transactionId = (string)$attempt['data']['transaction_id'];
+                break;
+            }
+        }
+
+        if ($template->transactionId)
+        {
+            try {
+                $template->transactionData = $this->getTransactionDataFromAPI($template->transactionId);
+            }
+            catch (RedirectResponseException | AjaxRedirectResponseException $e) {
+            }
+            catch (ClientException $e) {
+                Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_get_transaction'], $e->getResponse()->getBody()->getContents()));
+            }
+            catch (GuzzleException | \Exception $e) {
+                Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_get_transaction'], ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
+            }
+
+            // Handle form submissions
+            if (Input::post('FORM_SUBMIT') === $template->formSubmit) {
+
+                // Void payment
+                if (isset($_POST['void'])) {
+
+                    try {
+                        $this->sendVoidRequest($template->transactionId);
+
+                        $template->order->paytrace_void_requested = 1;
+                        $template->order->save();
+
+                        Message::addConfirmation($GLOBALS['TL_LANG']['MSC']['transaction_void_success']);
+                        Controller::reload();
+                    }
+                    catch (RedirectResponseException | AjaxRedirectResponseException $e) {
+                    }
+                    catch (ClientException $e) {
+                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_void_transaction'], $e->getResponse()->getBody()->getContents()));
+                    }
+                    catch (GuzzleException | \Exception $e) {
+                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_void_transaction'], ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
+                    }
+                }
+
+                // Refund payment
+                if (isset($_POST['refund'])) {
+
+                    // Todo: allow backend user to specify the amount to refund
+                    if ($amount = (float)($template->transactionData['settle_amount'] ?? 0)) {
+
+                        try {
+                            $this->sendRefundRequest($template->transactionId, $amount);
+
+                            $template->order->paytrace_refund_amt_requested = $amount;
+                            $template->order->save();
+
+                            Message::addConfirmation($GLOBALS['TL_LANG']['MSC']['transaction_refund_success']);
+                            Controller::reload();
+                        }
+                        catch (RedirectResponseException | AjaxRedirectResponseException $e) {
+                        }
+                        catch (ClientException $e) {
+                            Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_refund_transaction'], $e->getResponse()->getBody()->getContents()));
+                        }
+                        catch (GuzzleException | \Exception $e) {
+                            Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_refund_transaction'], ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
+                        }
+                    }
+                    else {
+                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_refund_missing_settlement_amt'], ''));
+                    }
+                }
+
+                // Todo: add other actions like capture, etc.
+            }
+        }
+
+        return $template->parse();
+    }
+
+
+    /**
+     * @param string $transactionId
+     * @return array
+     * @throws \Exception|\GuzzleHttp\Exception\GuzzleException
+     */
+    protected function getTransactionDataFromAPI(string $transactionId): array
+    {
+        // Create a client
+        $client = PaytraceClient::create(
+            $this->paytrace_username,
+            $this->paytrace_password,
+            $this->paytrace_integrator_id,
+            (bool)$this->debug
+        );
+
+        if (empty($accessToken = System::getContainer()->get(TokenHelper::class)->getAccessToken($client, $this->paytrace_username, $this->paytrace_password))) {
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval']);
+        }
+
+        $transactionData = new Transaction();
+
+        $response = $transactionData->sendRequest(
+            $client,
+            $transactionId,
+            $this->paytrace_merchant_id,
+            $accessToken
+        );
+
+        if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response']);
+        }
+
+        if (($response['status'] ?? null) !== 'success') {
+            $message = isset($response['data']) && \is_array($response['data']) ? \json_encode($response['data'], JSON_THROW_ON_ERROR) : 'General API error.';
+            throw new \Exception(
+                $message,
+                $response['status_code'] ?? null
+            );
+        }
+
+        return $response['data'];
+    }
+
+
+    /**
+     * @param string $transactionId
+     * @param float $amount
+     * @return bool
+     * @throws \Exception|\GuzzleHttp\Exception\GuzzleException
+     */
+    protected function sendRefundRequest(string $transactionId, float $amount): bool
+    {
+        // Create a client
+        $client = PaytraceClient::create(
+            $this->paytrace_username,
+            $this->paytrace_password,
+            $this->paytrace_integrator_id,
+            (bool)$this->debug
+        );
+
+        if (empty($accessToken = System::getContainer()->get(TokenHelper::class)->getAccessToken($client, $this->paytrace_username, $this->paytrace_password))) {
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval']);
+        }
+
+        $refund = new Refund();
+
+        $response = $refund->sendRequest(
+            $client,
+            [
+                'merchant_id' => $this->paytrace_merchant_id,
+                'batch_items' => [
+                    [
+                        'transaction_id' => $transactionId,
+                        'amount' => $amount
+                    ]
+                ],
+            ],
+            $accessToken
+        );
+
+        if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response']);
+        }
+
+        if (($response['status'] ?? null) !== 'success'
+            || empty($response['data'])
+            || !\is_array($response['data'])
+            || ($response['data'][0]['status'] ?? null) === 'error'
+        ) {
+            $message = isset($response['data']) && \is_array($response['data']) ? \json_encode($response['data'], JSON_THROW_ON_ERROR) : 'General API error.';
+
+            throw new \Exception(
+                $message,
+                $response['status_code'] ?? null
+            );
+        }
+
+        return true;
+    }
+
+
+    /**
+     * @param string $transactionId
+     * @return bool
+     * @throws \Exception|\GuzzleHttp\Exception\GuzzleException
+     */
+    protected function sendVoidRequest(string $transactionId): bool
+    {
+        // Create a client
+        $client = PaytraceClient::create(
+            $this->paytrace_username,
+            $this->paytrace_password,
+            $this->paytrace_integrator_id,
+            (bool)$this->debug
+        );
+
+        if (empty($accessToken = System::getContainer()->get(TokenHelper::class)->getAccessToken($client, $this->paytrace_username, $this->paytrace_password))) {
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval']);
+        }
+
+        $voidTransaction = new VoidTransaction();
+
+        $response = $voidTransaction->sendRequest(
+            $client,
+            [
+                'merchant_id' => $this->paytrace_merchant_id,
+                'batch_items' => [
+                    [
+                        'transaction_id' => $transactionId,
+                    ]
+                ],
+            ],
+            $accessToken
+        );
+
+        if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response']);
+        }
+
+        if (($response['status'] ?? null) !== 'success'
+            || empty($response['data'])
+            || !\is_array($response['data'])
+            || ($response['data'][0]['status'] ?? null) === 'error'
+        ) {
+            $message = isset($response['data']) && \is_array($response['data']) ? \json_encode($response['data'], JSON_THROW_ON_ERROR) : 'General API error.';
+
+            throw new \Exception(
+                $message,
+                $response['status_code'] ?? null
+            );
+        }
+
+        return true;
+    }
 }
