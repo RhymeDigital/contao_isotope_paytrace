@@ -62,14 +62,14 @@ namespace {
     /**
      * Errors
      */
-    $lang['ERR']['collection_not_purchasable']  = $lang['ERR']['collection_not_purchasable'] ?? 'Order/product collection is not purchasable';
-    $lang['ERR']['paytrace_no_api_response'] = $lang['ERR']['paytrace_no_api_response'] ?? 'Paytrace E2ee: No API response received.';
-    $lang['ERR']['access_token_retrieval']        = $lang['ERR']['access_token_retrieval'] ?? 'Paytrace E2ee: Could not retrieve access token.%s';
-    $lang['ERR']['paytrace_transaction_attempt']      = $lang['ERR']['paytrace_transaction_attempt'] ?? 'Paytrace E2ee: Error(s) when attempting transaction: %s';
-    $lang['ERR']['paytrace_payment_not_processed1']      = $lang['ERR']['paytrace_payment_not_processed1'] ?? 'Payment could not be processed. Message from processor: %s';
-    $lang['ERR']['paytrace_payment_not_processed2']      = $lang['ERR']['paytrace_payment_not_processed2'] ?? 'Payment could not be processed. Please try again or contact an administrator.';
-    $lang['ERR']['paytrace_get_transaction']    = $lang['ERR']['paytrace_get_transaction'] ?? 'Paytrace E2ee: Errors when attempting to retrieve transaction information: %s';
-    $lang['ERR']['paytrace_void_transaction']   = $lang['ERR']['paytrace_void_transaction'] ?? 'Paytrace E2ee: Errors when attempting to void transaction: %s';
-    $lang['ERR']['paytrace_refund_transaction'] = $lang['ERR']['paytrace_refund_transaction'] ?? 'Paytrace E2ee: Errors when attempting to refund transaction: %s';
+    $lang['ERR']['collection_not_purchasable']             = $lang['ERR']['collection_not_purchasable'] ?? 'Order/product collection is not purchasable';
+    $lang['ERR']['paytrace_no_api_response']               = $lang['ERR']['paytrace_no_api_response'] ?? 'Paytrace E2ee: No API response received.';
+    $lang['ERR']['access_token_retrieval']                 = $lang['ERR']['access_token_retrieval'] ?? 'Paytrace E2ee: Could not retrieve access token.%s';
+    $lang['ERR']['paytrace_transaction_attempt']           = $lang['ERR']['paytrace_transaction_attempt'] ?? 'Paytrace E2ee: Error(s) when attempting transaction: %s';
+    $lang['ERR']['paytrace_payment_not_processed1']        = $lang['ERR']['paytrace_payment_not_processed1'] ?? 'Payment could not be processed. Message from processor: %s';
+    $lang['ERR']['paytrace_payment_not_processed2']        = $lang['ERR']['paytrace_payment_not_processed2'] ?? 'Payment could not be processed. Please try again or contact an administrator.';
+    $lang['ERR']['paytrace_get_transaction']               = $lang['ERR']['paytrace_get_transaction'] ?? 'Paytrace E2ee: Errors when attempting to retrieve transaction information: %s';
+    $lang['ERR']['paytrace_void_transaction']              = $lang['ERR']['paytrace_void_transaction'] ?? 'Paytrace E2ee: Errors when attempting to void transaction: %s';
+    $lang['ERR']['paytrace_refund_transaction']            = $lang['ERR']['paytrace_refund_transaction'] ?? 'Paytrace E2ee: Errors when attempting to refund transaction: %s';
     $lang['ERR']['paytrace_refund_missing_settlement_amt'] = $lang['ERR']['paytrace_refund_missing_settlement_amt'] ?? 'Cannot refund transaction without a settlement amount.%s';
 }

@@ -49,7 +49,7 @@ class Paytrace extends Payment implements IsotopeBackendInterface
     public function checkoutForm(IsotopeProductCollection $objOrder, Module $objModule)
     {
         if (!$objOrder instanceof IsotopePurchasableCollection) {
-            System::log($GLOBALS['TL_LANG']['ERR']['collection_not_purchasable'], __METHOD__, TL_ERROR);
+            System::log($GLOBALS['TL_LANG']['ERR']['collection_not_purchasable'] ?? 'Order or product collection is not purchasable.', __METHOD__, TL_ERROR);
             return false;
         }
 
@@ -125,14 +125,14 @@ HTML;
                 || \trim($response['response']['data']['transaction_id'] ?? '') === ''
             ) {
                 $strErrors = $response['errorMessage'];
-                System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'], $response['errorCode'] . '] "'.$strErrors.'"'), __METHOD__, TL_ERROR);
+                System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'] ?? 'Error: %s', $response['errorCode'] . '] "'.$strErrors.'"'), __METHOD__, TL_ERROR);
             }
             else {
                 $objOrder->setDatePaid(\time());
                 $objOrder->save();
 
                 // Pack it up, people. We're done here
-                System::log(\sprintf($GLOBALS['TL_LANG']['MSC']['transaction_sale_success'], ' Transaction ID: "' . $response['response']['data']['transaction_id']  . '"'), __METHOD__, TL_GENERAL);
+                System::log(\sprintf($GLOBALS['TL_LANG']['MSC']['transaction_sale_success'] ?? 'Paytrace sale was successful.%s', ' Transaction ID: "' . $response['response']['data']['transaction_id']  . '"'), __METHOD__, TL_GENERAL);
                 return false;
             }
         }
@@ -190,7 +190,7 @@ HTML;
             if (empty($accessToken = System::getContainer()->get(TokenHelper::class)->getAccessToken($client, $this->paytrace_username, $this->paytrace_password))) {
                 return [
                     'hasError' => true,
-                    'errorMessage' => $GLOBALS['TL_LANG']['ERR']['access_token_retrieval']
+                    'errorMessage' => $GLOBALS['TL_LANG']['ERR']['access_token_retrieval'] ?? 'Error retrieving access token.'
                 ];
             }
 
@@ -246,7 +246,7 @@ HTML;
             );
 
             if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
-                System::log($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response'], __METHOD__, TL_ERROR);
+                System::log($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response'] ?? 'No API response.', __METHOD__, TL_ERROR);
                 return [
                     'hasError' => true,
                     'errorMessage' => $GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed2']
@@ -262,10 +262,10 @@ HTML;
             $objOrder->save();
 
             if (($response['data']['response_code'] ?? null) !== 101) {
-                System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'], '[' . ($response['data']['response_code'] ?? '') . '] "'.($response['data']['response_message'] ?? '').'"'), __METHOD__, TL_ERROR);
+                System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'] ?? 'Error: %s', '[' . ($response['data']['response_code'] ?? '') . '] "'.($response['data']['response_message'] ?? '').'"'), __METHOD__, TL_ERROR);
                 return [
                     'hasError' => true,
-                    'errorMessage' => \sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed1'], ($response['data']['response_message'] ?? ''))
+                    'errorMessage' => \sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed1'] ?? 'Error: %s', ($response['data']['response_message'] ?? ''))
                 ];
             }
 
@@ -275,14 +275,14 @@ HTML;
             ];
         }
         catch (ClientException $e) {
-            System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'], (string)$e->getResponse()->getBody()->getContents()), __METHOD__, TL_ERROR);
+            System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'] ?? 'Error: %s', (string)$e->getResponse()->getBody()->getContents()), __METHOD__, TL_ERROR);
             return [
                 'hasError' => true,
                 'errorMessage' => $GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed2']
             ];
         }
         catch (\Exception $e) {
-            System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'], '[' . $e->getCode() . '] "'.$e->getMessage().'"'), __METHOD__, TL_ERROR);
+            System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'] ?? 'Error: %s', '[' . $e->getCode() . '] "'.$e->getMessage().'"'), __METHOD__, TL_ERROR);
             return [
                 'hasError' => true,
                 'errorMessage' => $GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed2']
@@ -350,10 +350,10 @@ HTML;
             catch (RedirectResponseException | AjaxRedirectResponseException $e) {
             }
             catch (ClientException $e) {
-                Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_get_transaction'], $e->getResponse()->getBody()->getContents()));
+                Message::addError(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_get_transaction'] ?? 'Error: %s', $e->getResponse()->getBody()->getContents()));
             }
             catch (GuzzleException | \Exception $e) {
-                Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_get_transaction'], ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
+                Message::addError(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_get_transaction'] ?? 'Error: %s', ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
             }
 
             // Handle form submissions
@@ -368,16 +368,16 @@ HTML;
                         $template->order->paytrace_void_requested = 1;
                         $template->order->save();
 
-                        Message::addConfirmation($GLOBALS['TL_LANG']['MSC']['transaction_void_success']);
+                        Message::addConfirmation($GLOBALS['TL_LANG']['MSC']['transaction_void_success'] ?? 'Success');
                         Controller::reload();
                     }
                     catch (RedirectResponseException | AjaxRedirectResponseException $e) {
                     }
                     catch (ClientException $e) {
-                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_void_transaction'], $e->getResponse()->getBody()->getContents()));
+                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_void_transaction'] ?? 'Error: %s', $e->getResponse()->getBody()->getContents()));
                     }
                     catch (GuzzleException | \Exception $e) {
-                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_void_transaction'], ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
+                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_void_transaction'] ?? 'Error: %s', ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
                     }
                 }
 
@@ -393,20 +393,20 @@ HTML;
                             $template->order->paytrace_refund_amt_requested = $amount;
                             $template->order->save();
 
-                            Message::addConfirmation($GLOBALS['TL_LANG']['MSC']['transaction_refund_success']);
+                            Message::addConfirmation($GLOBALS['TL_LANG']['MSC']['transaction_refund_success'] ?? 'Successfully refunded.');
                             Controller::reload();
                         }
                         catch (RedirectResponseException | AjaxRedirectResponseException $e) {
                         }
                         catch (ClientException $e) {
-                            Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_refund_transaction'], $e->getResponse()->getBody()->getContents()));
+                            Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_refund_transaction'] ?? 'Error: %s', $e->getResponse()->getBody()->getContents()));
                         }
                         catch (GuzzleException | \Exception $e) {
-                            Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_refund_transaction'], ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
+                            Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_err_refund_transaction'] ?? 'Error: %s', ' [' . $e->getCode() . '] "'.$e->getMessage().'"'));
                         }
                     }
                     else {
-                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_refund_missing_settlement_amt'], ''));
+                        Message::addError(\sprintf($GLOBALS['TL_LANG']['MSC']['paytrace_refund_missing_settlement_amt'] ?? 'Error: missing amount.%s', ''));
                     }
                 }
 
@@ -434,7 +434,7 @@ HTML;
         );
 
         if (empty($accessToken = System::getContainer()->get(TokenHelper::class)->getAccessToken($client, $this->paytrace_username, $this->paytrace_password))) {
-            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval']);
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval'] ?? 'Error retrieving access token.');
         }
 
         $transactionData = new Transaction();
@@ -447,7 +447,7 @@ HTML;
         );
 
         if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
-            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response']);
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response'] ?? 'No API response.');
         }
 
         if (($response['status'] ?? null) !== 'success') {
@@ -479,7 +479,7 @@ HTML;
         );
 
         if (empty($accessToken = System::getContainer()->get(TokenHelper::class)->getAccessToken($client, $this->paytrace_username, $this->paytrace_password))) {
-            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval']);
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval'] ?? 'Error retrieving access token.');
         }
 
         $refund = new Refund();
@@ -499,7 +499,7 @@ HTML;
         );
 
         if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
-            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response']);
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response'] ?? 'No API response.');
         }
 
         if (($response['status'] ?? null) !== 'success'
@@ -535,7 +535,7 @@ HTML;
         );
 
         if (empty($accessToken = System::getContainer()->get(TokenHelper::class)->getAccessToken($client, $this->paytrace_username, $this->paytrace_password))) {
-            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval']);
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['access_token_retrieval'] ?? 'Error retrieving access token.');
         }
 
         $voidTransaction = new VoidTransaction();
@@ -554,7 +554,7 @@ HTML;
         );
 
         if (empty($response = \json_decode((string)$response->getBody(), true, 512, JSON_THROW_ON_ERROR))) {
-            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response']);
+            throw new \Exception($GLOBALS['TL_LANG']['ERR']['paytrace_no_api_response'] ?? 'No API response.');
         }
 
         if (($response['status'] ?? null) !== 'success'
