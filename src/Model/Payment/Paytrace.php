@@ -274,11 +274,35 @@ HTML;
                 'response' => $response
             ];
         }
-        catch (ClientException $e) {
-            System::log(\sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'] ?? 'Error: %s', (string)$e->getResponse()->getBody()->getContents()), __METHOD__, TL_ERROR);
+        catch (ClientException $e)
+        {
+            $errorCode = null;
+            $errorMsg = \sprintf($GLOBALS['TL_LANG']['ERR']['paytrace_transaction_attempt'] ?? 'Error: %s', (string)$e->getResponse()->getBody()->getContents());
+
+            // Try to get the more detailed error from the JSON response
+            try
+            {
+                if (($jsonError = \json_decode((string)$e->getResponse()->getBody(), true, 512, JSON_THROW_ON_ERROR)) !== null
+                    && !empty($jsonError['data'])
+                    && \is_array($jsonError['data'])
+                    && !empty($jsonError['data'][0]['detail'])
+                ) {
+                    // Just get the first error for now
+                    $errorMsg = $jsonError['data'][0]['detail'];
+
+                    // Get the error code too if we can
+                    if (!empty($jsonError['data'][0]['error_id'])) {
+                        $errorCode = (int)$jsonError['data'][0]['error_id'];
+                    }
+                }
+            }
+            catch (\Exception $e2) {}
+
+            System::log('Paytrace Error: ' . $errorMsg . ($errorCode !== null ? ' [Error Code: '.$errorCode.']' : ''), __METHOD__, TL_ERROR);
+
             return [
                 'hasError' => true,
-                'errorMessage' => $GLOBALS['TL_LANG']['ERR']['paytrace_payment_not_processed2']
+                'errorMessage' => $errorMsg
             ];
         }
         catch (\Exception $e) {
